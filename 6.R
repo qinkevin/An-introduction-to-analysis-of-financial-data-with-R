@@ -89,3 +89,67 @@ source('hfanal.R')
 da=read.table('taq-cat-jan2010.txt',header = T)
 m1=hfanal(da,1)
 
+da=read.table('d-ibm-0110.txt',header = T)
+ibm=log(da[,2]+1)*100
+source('RMfit.R')
+mm=RMfit(ibm)
+
+da1=read.table('d-useu0111.txt',header = T)
+par(mfcol=c(2,1))
+rate=da1$rate
+plot(rate,type='l')
+rt=diff(log(rate))
+plot(rt,type='l')
+m2=RMfit(rt)
+
+xt=-log(da$return+1)
+library(fGarch)
+m1=garchFit(~garch(1,1),data = xt,trace = F)
+predict(m1,3)
+source('RMeasure.R')
+m11=RMeasure(-.000601,.0078243)
+m2=garchFit(~garch(1,1),data=xt,trace = F,cond.dist = 'std')
+predict(m2,3)
+m22=RMeasure(-.0004113,.0081009,cond.dist = 'std',df=5.751)
+M1=predict(m1,15)
+names(M1)
+mf=M1$meanForecast
+merr=M1$meanError
+pmean=sum(mf)
+pvar=sum(merr^2)
+pstd=sqrt(pvar)
+M11=RMeasure(pmean,pstd)
+
+source('SimGarcht.R')
+vol=volatility(m2)
+a1=c(1.922*10^(-6),0.06448)
+b1=0.9286
+mu=-4.113*10^(-4)
+ini=c(ibm[2515],vol[2515])
+mm=SimGarcht(h=15,mu=mu,alpha=a1,b1=b1,df=5.751,ini=ini,nter=30000)
+rr=mm$rtn
+mean(rr)
+quantile(rr,c(0.95,0.99))
+idx=c(1:30000)[rr>0.0479]
+
+
+da=read.table('d-ibm-0110.txt',header = T)
+ibm=-log(da[,2]+1)
+prob1=c(0.9,0.95,0.99,0.999)
+quantile(ibm,prob1)
+sibm=sort(ibm)
+es=sum(sibm[2390:2515])/(2515-2389)
+
+dd=read.table('d-ibm-rq.txt',header = T)
+dd[,3]=dd[,3]/100
+library(quantreg)
+mm=rq(nibm~vol+vix,tau=0.95,data=dd)
+summary(mm)
+names(mm)
+fit=mm$fitted.values
+tdx=c(2:2515)/252+2001
+plot(tdx,dd$nibm,type='l',xlab='year',ylab='neg-log-rtn')
+lines(tdx,fit,col='red')
+v1[2515]
+
+
